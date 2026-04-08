@@ -64,80 +64,102 @@ def cli() -> None:
 # ---------------------------------------------------------------------------
 
 @cli.command()
-@click.option("--source", required=True, type=click.Path(), help="Source folder to index.")
-@click.option("--wiki", default="./wiki", show_default=True, help="Wiki output folder.")
-@click.option("--name", default="", help="Project name (used in headings and prompts).")
-def init(source: str, wiki: str, name: str) -> None:
-    """Scaffold a new wiki project (wiki.yaml + CLAUDE.md + .gitignore)."""
+@click.option("--source", default=".", show_default=True, type=click.Path(),
+              help="Source folder to index (default: current directory).")
+@click.option("--wiki", default="./wiki", show_default=True,
+              help="Wiki output folder.")
+@click.option("--name", default="", help="Project name. Defaults to source folder name.")
+@click.option("--backend", default="claude-code",
+              type=click.Choice(["claude-api", "openai-compat", "claude-code"], case_sensitive=False),
+              show_default=True, help="LLM backend.")
+@click.option("--model", default="", help="Model name. Defaults to backend default.")
+@click.option("--api-key-env", default="ANTHROPIC_API_KEY", show_default=True,
+              help="Env var holding the API key (claude-api / openai-compat only).")
+@click.option("--base-url", default="", help="Base URL for openai-compat backend.")
+@click.option("--force", is_flag=True, help="Overwrite existing wiki.yaml without prompting.")
+def init(
+    source: str, wiki: str, name: str,
+    backend: str, model: str, api_key_env: str, base_url: str,
+    force: bool,
+) -> None:
+    """Scaffold a new wiki project (wiki.yaml + CLAUDE.md).
+
+    All options have safe defaults so the simplest usage is just:
+
+        wiki-builder init
+
+    Run from the project folder you want to index.
+    """
     cwd = Path.cwd()
 
     if not name:
         name = Path(source).resolve().name
 
-    # Determine backend
-    backend = click.prompt(
-        "LLM backend",
-        type=click.Choice(["claude-api", "openai-compat", "claude-code"], case_sensitive=False),
-        default="claude-api",
-    )
+    if not model:
+        model = {
+            "claude-api": "claude-sonnet-4-6",
+            "claude-code": "claude-sonnet-4-6",
+            "openai-compat": "llama3.2",
+        }.get(backend, "claude-sonnet-4-6")
 
-    model_default = "claude-sonnet-4-6" if backend == "claude-api" else "llama3.2"
-    model = click.prompt("Model name", default=model_default)
-
-    base_url = ""
-    api_key_env = "ANTHROPIC_API_KEY"
-    if backend == "openai-compat":
-        base_url = click.prompt(
-            "Base URL",
-            default="http://localhost:11434/v1",
-        )
-        api_key_env = click.prompt("API key env var (or leave blank for local)", default="")
-
-    # Write wiki.yaml
     wiki_yaml = cwd / "wiki.yaml"
-    if wiki_yaml.exists() and not click.confirm(f"{wiki_yaml} already exists. Overwrite?"):
-        click.echo("Aborted.")
+    if wiki_yaml.exists() and not force:
+        click.echo(f"wiki.yaml already exists. Use --force to overwrite.")
         return
 
     base_url_line = f'  base_url: "{base_url}"' if base_url else ""
-    api_key_env_line = f'  api_key_env: "{api_key_env}"' if api_key_env else '  api_key: "local"'
+    api_key_line = (
+        f'  api_key_env: "{api_key_env}"'
+        if backend in ("claude-api", "openai-compat") and api_key_env
+        else '  api_key: "local"'
+    )
 
+    # Auto-detect extra exclude folders present in source
+    src_path = (cwd / source).resolve()
+    auto_excludes = []
+    for hidden in (".git", ".obsidian", ".vscode", "node_modules", "__pycache__"):
+        if (src_path / hidden).exists():
+            auto_excludes.append(hidden)
+
+    extra_excludes = ""
+    for folder in auto_excludes:
+        extra_excludes += f'    - "{folder}"\n'
+
+    wiki_dirname = Path(wiki).name  # e.g. "./wiki" -> "wiki"
     wiki_yaml.write_text(
         _WIKI_YAML_TEMPLATE.format(
             name=name,
             source=source,
             wiki=wiki,
+            wiki_dirname=wiki_dirname,
             backend=backend,
             model=model,
             base_url_line=base_url_line,
-            api_key_env_line=api_key_env_line,
+            api_key_line=api_key_line,
+            extra_excludes=extra_excludes,
         ),
         encoding="utf-8",
     )
     click.echo(f"  Created: {wiki_yaml}")
 
-    # Write CLAUDE.md
     claude_md = cwd / "CLAUDE.md"
     if not claude_md.exists():
         claude_md.write_text(_CLAUDE_MD_TEMPLATE.format(name=name), encoding="utf-8")
         click.echo(f"  Created: {claude_md}")
     else:
-        click.echo(f"  Skipped: {claude_md} (already exists)")
+        click.echo(f"  Skipped: {claude_md} (already exists — edit it to customize the LLM prompts)")
 
-    # Create wiki directory
     wiki_dir = cwd / wiki
     wiki_dir.mkdir(parents=True, exist_ok=True)
     click.echo(f"  Created: {wiki_dir}/")
 
-    click.echo(
-        f"\nDone! Run `wiki-builder ingest --no-llm` for a quick test, "
-        f"or `wiki-builder ingest` for full LLM summarization."
-    )
-    click.echo(
-        "\nSecurity reminder:\n"
-        "  - Never commit wiki.yaml if it contains a real API key (use api_key_env instead)\n"
-        "  - Add wiki.yaml and .env to your .gitignore if they contain secrets"
-    )
+    if auto_excludes:
+        click.echo(f"  Auto-excluded: {', '.join(auto_excludes)}")
+
+    click.echo("\nNext steps:")
+    click.echo("  wiki-builder ingest --no-llm     # fast extraction, no API calls")
+    click.echo("  wiki-builder ingest              # full run with LLM distillation")
+    click.echo("\nSecurity: never commit wiki.yaml if it contains a real API key.")
 
 
 # ---------------------------------------------------------------------------
@@ -306,12 +328,15 @@ project:
 
 source:
   path: "{source}"
-  exclude_folders: []
-  exclude_patterns:
+  exclude_folders:
+    - "{wiki_dirname}"      # never re-index wiki output
+{extra_excludes}  exclude_patterns:
     - "~$*"
     - "Thumbs.db"
     - "desktop.ini"
     - ".DS_Store"
+    - "wiki.yaml"
+    - "CLAUDE.md"
   max_file_size_mb: 50
 
 wiki:
@@ -322,7 +347,7 @@ llm:
   backend: "{backend}"
   model: "{model}"
 {base_url_line}
-{api_key_env_line}
+{api_key_line}
   max_input_chars: 15000
   chunk_overlap_chars: 500
   cache: true
@@ -371,23 +396,27 @@ index_file: "./{wiki}/index.md"
 _CLAUDE_MD_TEMPLATE = """\
 # Wiki Schema — {name}
 
-This file defines the structure, conventions, and workflows for this wiki.
-It is used as the LLM system prompt on every wiki-builder operation.
-Edit it to tune the LLM's behavior for your domain.
+This file is the LLM system prompt used on every wiki-builder operation.
+Edit the sections below to tune behavior for your domain.
 
 ---
 
 ## Project Context
 
-[Describe what this wiki is about. The LLM uses this to understand domain
-vocabulary and what kinds of documents are likely to appear.]
+[Describe what this project is about. What kinds of documents does it contain?
+Who are the key stakeholders? What decisions or processes does it document?
+The LLM uses this to understand domain vocabulary and emphasis.]
 
-## Wiki Structure
+## Distillation Style
 
-- **Source summaries** — one page per source file: `wiki/<folder>/<file>.md`
-- **index.md** — master content catalog, updated on every ingest
-- **log.md** — append-only chronological record of operations
-- **queries/** — Q&A results filed back into the wiki
+The goal is a compact, high-signal knowledge base — not a summary archive.
+For each document:
+- Strip: cover pages, table of contents, legal boilerplate, repetitive headers, blank sections
+- Keep: decisions, requirements, processes, findings, data, names, dates, technical specifics
+- Restructure: if the source is poorly organized, rewrite into logical sections
+- If the source is already concise and well-structured, preserve it mostly as-is
+
+Notes should be dense — every sentence should carry information.
 
 ## Tag Taxonomy
 
@@ -396,33 +425,25 @@ sql, python, word, excel, pdf, powerpoint, script, data, documentation,
 process, configuration, report, reference, folder-index, html, xml, json,
 markdown, other
 
-## Summary Style
-
-- Summaries must be concise — approximately 150 words
-- Always state: what the document is, what it contains, who it is for (if known)
-- Use plain English. Avoid jargon unless it appears in the source.
-- Do not invent information not present in the source.
-
 ## Wikilink Conventions
 
 - Use `[[page-slug|Display Name]]` format
-- Only link to pages that exist (or are likely to exist) in the wiki
-- Add a "Related" section at the bottom of each article with wikilinks
+- Add a `## Related` section at the bottom of each article with wikilinks
 
 ## Article Section Order
 
-1. YAML frontmatter
-2. Breadcrumb navigation
-3. H1 title (filename without extension)
-4. File metadata callout (type, size, modified date, source link)
-5. `## Summary` — LLM-generated
-6. `## Key Entities` — bullet list of people, systems, concepts, dates
-7. `## Content` — raw extracted text in code fence
-8. `## Related` — wikilinks to related pages
+1. YAML frontmatter (auto-generated)
+2. Breadcrumb navigation (auto-generated)
+3. H1 title
+4. File metadata callout
+5. `## Notes` — distilled content (LLM) or `## Summary` (extraction-only)
+6. `## Key Entities` — people, systems, dates, frameworks
+7. `## Content` — raw extracted text
+8. `## Related` — wikilinks
 
 ## Output Rules
 
 - Return JSON exactly as requested — no extra text before or after the JSON block.
-- Never hallucinate. Only summarize what is present in the source content.
-- When you are uncertain, say so.
+- Never hallucinate. Only use information present in the source.
+- When uncertain, omit rather than guess.
 """
