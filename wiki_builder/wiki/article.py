@@ -125,7 +125,7 @@ def render_article(
         related_block = "\n## Related\n\n" + "\n".join(lines)
 
     # LLM model tag for frontmatter
-    llm_model = llm_result.timestamp and cfg.llm.model or ""
+    llm_model = cfg.llm.model if (llm_result and llm_result.summary) else ""
 
     tags_yaml = "[" + ", ".join(tags) + "]"
 

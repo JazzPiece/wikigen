@@ -110,7 +110,7 @@ class OpenAICompatBackend(LLMBackend):
 
     def print_cost_summary(self) -> None:
         print(
-            f"\n[LLM usage] {self._model} @ {self._base_url} — "
+            f"\n[LLM usage] {self._model} @ {self._base_url} | "
             f"input: {self._total_input_tokens:,} tok, "
             f"output: {self._total_output_tokens:,} tok"
         )

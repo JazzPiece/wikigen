@@ -18,7 +18,19 @@ import click
 from rich.console import Console
 from rich.table import Table
 
-console = Console()
+console = Console(highlight=False)
+
+
+def _safe_rule(title: str = "") -> None:
+    """Print a separator line, falling back to plain text on encoding errors."""
+    try:
+        console.rule(title)
+    except (UnicodeEncodeError, Exception):
+        width = 60
+        if title:
+            print(f"--- {title} ---")
+        else:
+            print("-" * width)
 
 
 # ---------------------------------------------------------------------------
@@ -166,15 +178,18 @@ def ingest(
     state = WikiState(cfg.wiki_path())
     state.load()
 
-    console.rule(f"[bold]wiki-builder ingest[/] — {cfg.project.name}")
-    click.echo(f"  Source : {cfg.source_path()}")
-    click.echo(f"  Wiki   : {cfg.wiki_path()}")
-    click.echo(f"  Mode   : {'incremental' if incremental else 'full rebuild'}")
-    click.echo(f"  LLM    : {cfg.llm.backend} / {cfg.llm.model}" if not no_llm else "  LLM    : disabled (--no-llm)")
+    _safe_rule(f"wiki-builder ingest - {cfg.project.name}")
+    click.echo(f"  Source  : {cfg.source_path()}")
+    click.echo(f"  Wiki    : {cfg.wiki_path()}")
+    click.echo(f"  Mode    : {'incremental' if incremental else 'full rebuild'}")
+    if no_llm:
+        click.echo("  LLM     : disabled (--no-llm)")
+    else:
+        click.echo(f"  LLM     : {cfg.llm.backend} / {cfg.llm.model}")
     click.echo()
 
     if dry_run:
-        click.echo("  [DRY RUN — no files will be written]\n")
+        click.echo("  [DRY RUN - no files will be written]\n")
 
     result = run_ingest(
         cfg=cfg,
@@ -186,7 +201,7 @@ def ingest(
         no_crossref=no_crossref,
     )
 
-    console.rule()
+    _safe_rule()
     click.echo(f"  Files scanned   : {result.total_files}")
     click.echo(f"  Articles written: {result.articles_written}")
     click.echo(f"  Articles skipped: {result.articles_skipped}")
@@ -217,7 +232,7 @@ def query(question: str, config: str, save: bool, llm_backend: str | None) -> No
     cfg = _load_config(config)
     llm = _create_llm(cfg, llm_backend)
 
-    console.rule(f"[bold]wiki-builder query[/]")
+    _safe_rule("wiki-builder query")
     click.echo(f"  Q: {question}\n")
 
     answer = run_query(
@@ -245,7 +260,7 @@ def lint(config: str, fix: bool) -> None:
     state = WikiState(cfg.wiki_path())
     state.load()
 
-    console.rule("[bold]wiki-builder lint[/]")
+    _safe_rule("wiki-builder lint")
     run_lint(cfg=cfg, state=state, fix=fix)
 
 

@@ -136,7 +136,7 @@ class ClaudeAPIBackend(LLMBackend):
     def print_cost_summary(self) -> None:
         cost = self.total_cost_usd()
         print(
-            f"\n[LLM cost] {self._model} — "
+            f"\n[LLM cost] {self._model} | "
             f"input: {self._total_input_tokens:,} tok, "
             f"output: {self._total_output_tokens:,} tok, "
             f"total: ${cost:.4f}"
