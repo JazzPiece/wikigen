@@ -1,5 +1,18 @@
 # Roadmap
 
+## Shipped
+
+### `--log-file PATH` flag on `wikigen ingest`
+Tees full stdout+stderr run transcript to a file. Useful for auditing long runs,
+debugging errors, and keeping a record of what was processed.
+
+```bash
+wikigen ingest --log-file ./run.log
+wikigen ingest --full --log-file C:/logs/wikigen-2026-04-10.log
+```
+
+---
+
 ## Planned features
 
 ### Feature 1 — Incremental re-compile with reference updates

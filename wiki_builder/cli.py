@@ -12,6 +12,7 @@ Commands:
 from __future__ import annotations
 
 import sys
+from contextlib import contextmanager
 from pathlib import Path
 
 import click
@@ -19,6 +20,40 @@ from rich.console import Console
 from rich.table import Table
 
 console = Console(highlight=False)
+
+
+class _TeeStream:
+    """Write to both the original stream and a log file simultaneously."""
+
+    def __init__(self, stream, log_file):
+        self._stream = stream
+        self._log = log_file
+
+    def write(self, data):
+        self._stream.write(data)
+        self._log.write(data)
+
+    def flush(self):
+        self._stream.flush()
+        self._log.flush()
+
+    def __getattr__(self, name):
+        return getattr(self._stream, name)
+
+
+@contextmanager
+def _tee_output(log_path: Path):
+    """Context manager: tee stdout and stderr to log_path for the duration."""
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(log_path, "w", encoding="utf-8") as lf:
+        orig_out, orig_err = sys.stdout, sys.stderr
+        sys.stdout = _TeeStream(orig_out, lf)
+        sys.stderr = _TeeStream(orig_err, lf)
+        try:
+            yield
+        finally:
+            sys.stdout = orig_out
+            sys.stderr = orig_err
 
 
 def _safe_rule(title: str = "") -> None:
@@ -184,6 +219,8 @@ def init(
 @click.option("--verbose", "-v", is_flag=True, help="Print every file processed.")
 @click.option("--llm-backend", default=None, type=str,
               help="Override LLM backend from config (claude-api, openai-compat, claude-code).")
+@click.option("--log-file", default=None, type=click.Path(),
+              help="Write full run transcript to this file (stdout + stderr).")
 def ingest(
     config: str,
     incremental: bool,
@@ -192,10 +229,26 @@ def ingest(
     dry_run: bool,
     verbose: bool,
     llm_backend: str | None,
+    log_file: str | None,
 ) -> None:
     """Process source files and write wiki articles."""
+    if log_file:
+        with _tee_output(Path(log_file)):
+            _run_ingest(config, incremental, no_llm, no_crossref, dry_run, verbose, llm_backend)
+    else:
+        _run_ingest(config, incremental, no_llm, no_crossref, dry_run, verbose, llm_backend)
+
+
+def _run_ingest(
+    config: str,
+    incremental: bool,
+    no_llm: bool,
+    no_crossref: bool,
+    dry_run: bool,
+    verbose: bool,
+    llm_backend: str | None,
+) -> None:
     from .config import load_config
-    from .llm.base import CostGuardError
     from .operations.ingest import run_ingest
     from .state import WikiState
 
