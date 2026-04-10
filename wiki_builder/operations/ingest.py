@@ -332,7 +332,6 @@ def run_ingest(
                 all_articles.append(article_entry)
                 changed_articles.append(article_entry)
 
-                fs_key = str(source_file)
                 old_state = state.get_file_state(source_file)
                 if old_state and old_state.hash:
                     changed_files.append(source_file.name)

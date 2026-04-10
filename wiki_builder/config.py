@@ -222,19 +222,19 @@ def load_config(config_path: Path) -> WikiConfig:
         )
 
     if "llm" in raw:
-        l = raw["llm"]
-        rl_raw = l.get("rate_limit", {})
-        cg_raw = l.get("cost_guard", {})
+        llm_raw = raw["llm"]
+        rl_raw = llm_raw.get("rate_limit", {})
+        cg_raw = llm_raw.get("cost_guard", {})
         cfg.llm = LLMConfig(
-            backend=l.get("backend", cfg.llm.backend),
-            model=l.get("model", cfg.llm.model),
-            api_key_env=l.get("api_key_env", cfg.llm.api_key_env),
-            api_key=l.get("api_key", cfg.llm.api_key),
-            base_url=l.get("base_url", cfg.llm.base_url),
-            max_tokens_per_call=l.get("max_tokens_per_call", cfg.llm.max_tokens_per_call),
-            max_input_chars=l.get("max_input_chars", cfg.llm.max_input_chars),
-            chunk_overlap_chars=l.get("chunk_overlap_chars", cfg.llm.chunk_overlap_chars),
-            cache=l.get("cache", cfg.llm.cache),
+            backend=llm_raw.get("backend", cfg.llm.backend),
+            model=llm_raw.get("model", cfg.llm.model),
+            api_key_env=llm_raw.get("api_key_env", cfg.llm.api_key_env),
+            api_key=llm_raw.get("api_key", cfg.llm.api_key),
+            base_url=llm_raw.get("base_url", cfg.llm.base_url),
+            max_tokens_per_call=llm_raw.get("max_tokens_per_call", cfg.llm.max_tokens_per_call),
+            max_input_chars=llm_raw.get("max_input_chars", cfg.llm.max_input_chars),
+            chunk_overlap_chars=llm_raw.get("chunk_overlap_chars", cfg.llm.chunk_overlap_chars),
+            cache=llm_raw.get("cache", cfg.llm.cache),
             rate_limit=RateLimitConfig(
                 requests_per_minute=rl_raw.get("requests_per_minute", 50),
                 tokens_per_minute=rl_raw.get("tokens_per_minute", 40_000),

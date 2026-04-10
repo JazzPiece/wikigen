@@ -92,7 +92,7 @@ def write_obsidian_graph(wiki_root: Path, folders: list[str], cfg: WikiConfig) -
     # Folder tag format matches article.py: folder_name.lower().replace(" ", "-")
     managed_tags: dict[str, int] = {}  # tag -> color_int
 
-    user_colors: dict[str, str] = getattr(cfg.obsidian_groups, "folder_colors", {})
+    user_colors: dict[str, str] = cfg.obsidian_groups.folder_colors
 
     # Assign colors to all discovered folders
     for i, folder in enumerate(sorted(set(folders))):

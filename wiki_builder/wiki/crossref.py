@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import re
+from pathlib import Path
 
 from ..config import WikiConfig
 from ..llm.base import LLMBackend
@@ -125,7 +126,6 @@ def compute_cross_references(
 
             # Persist into LLM cache for the article
             if source_file:
-                from pathlib import Path
                 file_state = state.get_file_state(Path(source_file))
                 if file_state and file_state.llm_cache_key:
                     cached = state.get_llm_cache(file_state.llm_cache_key)

@@ -186,8 +186,7 @@ def _apply_fixes(report: LintReport, wiki_root: Path, cfg: WikiConfig) -> None:
         sp = Path(stale)
         if not sp.exists():
             # Source is gone, wiki article is orphaned
-            from ..state import WikiState as _WS
-            # Finding the wiki path would require state; just report
+            # (finding the wiki path would require state; just report)
             print(f"  Source deleted: {stale}")
             removed += 1
     if removed == 0:

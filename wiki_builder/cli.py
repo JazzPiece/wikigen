@@ -25,7 +25,7 @@ def _safe_rule(title: str = "") -> None:
     """Print a separator line, falling back to plain text on encoding errors."""
     try:
         console.rule(title)
-    except (UnicodeEncodeError, Exception):
+    except Exception:
         width = 60
         if title:
             print(f"--- {title} ---")
