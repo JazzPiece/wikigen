@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Ingest — {{ project_name }}{% endblock %}
+{% block content %}
+<h1>Ingest</h1>
+
+<div class="card">
+  <form method="post" action="/ingest">
+    <label><input type="checkbox" name="incremental" value="true" checked> Incremental (skip unchanged files)</label>
+    <label><input type="checkbox" name="no_llm" value="true"> No LLM (extract only)</label>
+    <label><input type="checkbox" name="no_crossref" value="true"> Skip cross-references</label>
+    <button type="submit">Run ingest</button>
+  </form>
+</div>
+
+{% if result %}
+<div class="card">
+  <h2>Result</h2>
+  {% if result.status == "not_implemented" %}
+  <p class="notice">Ingest runner not yet wired up — use <code>wikigen ingest</code> from the CLI.</p>
+  {% else %}
+  <pre class="meta" style="white-space:pre-wrap;">{{ result }}</pre>
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}

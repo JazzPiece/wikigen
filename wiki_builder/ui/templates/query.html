@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Query — {{ project_name }}{% endblock %}
+{% block content %}
+<h1>Query</h1>
+
+<div class="card">
+  <form method="post" action="/query">
+    <label for="question">Question</label>
+    <input type="text" id="question" name="question" value="{{ question }}" placeholder="What SQL queries touch the employee table?" autofocus>
+    <button type="submit">Ask</button>
+  </form>
+</div>
+
+{% if answer %}
+<div class="card">
+  <h2>Answer</h2>
+  <div style="font-size:0.95rem; line-height:1.7; white-space:pre-wrap;">{{ answer }}</div>
+</div>
+{% elif question %}
+<div class="card">
+  <p class="notice">Query runner not yet wired up — use <code>wikigen query "{{ question }}"</code> from the CLI.</p>
+</div>
+{% endif %}
+{% endblock %}

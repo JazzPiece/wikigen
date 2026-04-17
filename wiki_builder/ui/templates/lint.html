@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Lint — {{ project_name }}{% endblock %}
+{% block content %}
+<h1>Lint</h1>
+
+{% if report %}
+  {% if not report.has_issues() %}
+  <div class="card"><p class="notice" style="border-color:#86efac;">Wiki is healthy — no issues found.</p></div>
+  {% else %}
+  {% if report.orphan_pages %}
+  <div class="card">
+    <h2>Orphan pages <span class="badge badge-yellow">{{ report.orphan_pages|length }}</span></h2>
+    <ul style="list-style:none; margin-top:0.5rem;">
+      {% for p in report.orphan_pages %}<li class="meta" style="padding:0.2rem 0;">{{ p }}</li>{% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+  {% if report.broken_links %}
+  <div class="card">
+    <h2>Broken wikilinks <span class="badge badge-yellow">{{ report.broken_links|length }}</span></h2>
+    <ul style="list-style:none; margin-top:0.5rem;">
+      {% for page, target in report.broken_links %}<li class="meta" style="padding:0.2rem 0;">[[{{ target }}]] in {{ page }}</li>{% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+  {% if report.stale_articles %}
+  <div class="card">
+    <h2>Stale articles <span class="badge badge-yellow">{{ report.stale_articles|length }}</span></h2>
+    <ul style="list-style:none; margin-top:0.5rem;">
+      {% for p in report.stale_articles %}<li class="meta" style="padding:0.2rem 0;">{{ p }}</li>{% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+  {% endif %}
+{% else %}
+<div class="card">
+  <p class="notice">Lint runner not yet wired up — use <code>wikigen lint</code> from the CLI.</p>
+</div>
+{% endif %}
+{% endblock %}

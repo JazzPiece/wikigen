@@ -403,6 +403,32 @@ def status(config: str) -> None:
 
 
 # ---------------------------------------------------------------------------
+# serve
+# ---------------------------------------------------------------------------
+
+@cli.command()
+@click.option("--config", default="wiki.yaml", show_default=True)
+@click.option("--host", default="127.0.0.1", show_default=True)
+@click.option("--port", default=8000, show_default=True, type=int)
+@click.option("--reload", is_flag=True, help="Auto-reload on code changes (dev mode).")
+def serve(config: str, host: str, port: int, reload: bool) -> None:
+    """Launch the wikigen web UI."""
+    try:
+        import uvicorn
+    except ImportError:
+        click.echo("uvicorn not installed. Run: pip install wikigen[ui]", err=True)
+        sys.exit(1)
+
+    cfg = _load_config(config)
+
+    from .ui.app import create_app
+    app = create_app(cfg)
+
+    click.echo(f"  wikigen UI → http://{host}:{port}")
+    uvicorn.run(app, host=host, port=port, reload=reload)
+
+
+# ---------------------------------------------------------------------------
 # Templates for init
 # ---------------------------------------------------------------------------
 

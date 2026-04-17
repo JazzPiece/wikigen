@@ -261,6 +261,10 @@ wikigen query  QUESTION                    Ask a question against the wiki
   --save                                        Save answer as a new wiki page
 wikigen lint   [--fix]                     Health check: orphans, broken links, stale
 wikigen status                             Show wiki state summary
+wikigen serve  [OPTIONS]                   Launch web UI (requires pip install wikigen[ui])
+  --host TEXT                                   Bind host (default: 127.0.0.1)
+  --port INT                                    Port (default: 8000)
+  --reload                                      Auto-reload on code changes (dev mode)
 ```
 
 ---

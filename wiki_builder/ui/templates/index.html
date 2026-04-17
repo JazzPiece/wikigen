@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}{{ project_name }} — wikigen{% endblock %}
+{% block content %}
+<h1>{{ project_name }}</h1>
+
+<div class="grid-2">
+  <div class="card">
+    <div class="stat">
+      <span class="value">{{ total_articles }}</span>
+      <span class="label">Wiki articles</span>
+    </div>
+  </div>
+  <div class="card">
+    <div class="stat">
+      <span class="value">{{ total_tracked }}</span>
+      <span class="label">Tracked source files</span>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Configuration</h2>
+  <table style="width:100%; border-collapse:collapse; font-size:0.9rem;">
+    <tr><td style="padding:0.4rem 0; color:#64748b; width:140px;">Source</td><td class="meta">{{ source_path }}</td></tr>
+    <tr><td style="padding:0.4rem 0; color:#64748b;">Wiki</td><td class="meta">{{ wiki_path }}</td></tr>
+    <tr><td style="padding:0.4rem 0; color:#64748b;">LLM</td><td><span class="badge badge-blue">{{ llm_backend }}</span> <span class="meta">{{ llm_model }}</span></td></tr>
+  </table>
+</div>
+
+<div class="card">
+  <h2>Quick actions</h2>
+  <div style="display:flex; gap:0.75rem; flex-wrap:wrap; margin-top:0.5rem;">
+    <a href="/ingest"><button type="button" style="background:#1e3a5f;color:#7dd3fc;border:1px solid #2563eb;border-radius:6px;padding:0.5rem 1rem;cursor:pointer;font-size:0.9rem;">Run ingest</button></a>
+    <a href="/query"><button type="button" style="background:#1e2130;color:#94a3b8;border:1px solid #2d3348;border-radius:6px;padding:0.5rem 1rem;cursor:pointer;font-size:0.9rem;">Query wiki</button></a>
+    <a href="/lint"><button type="button" style="background:#1e2130;color:#94a3b8;border:1px solid #2d3348;border-radius:6px;padding:0.5rem 1rem;cursor:pointer;font-size:0.9rem;">Run lint</button></a>
+  </div>
+</div>
+{% endblock %}
